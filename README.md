@@ -24,7 +24,7 @@ Open http://localhost:8080. For phone installation, serve over HTTPS and use you
 
 ```sh
 npm run check
-node --test tests/*.test.mjs
+npm test
 ```
 
 ## Data

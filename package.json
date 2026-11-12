@@ -1,0 +1,10 @@
+{
+  "name": "food-saver",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/sw.js",
+    "test": "node --test --test-isolation=none tests/*.test.mjs"
+  }
+}
