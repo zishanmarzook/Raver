@@ -41,7 +41,7 @@ let state;
 try{state=JSON.parse(localStorage.getItem(KEY));if(!state||state.version!==1||!Array.isArray(state.inventory)||!state.settings)state=newState();}catch{state=newState();}
 let page=location.hash.slice(1)||'home',query='',storageFilter='All',category='All',sort='expiry',recipeMode='flexible',recipeQuery='',diet='All';
 let selectedGrocery=null,editing=null,toastTimer,undoAction=null;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{toast('Your device could not save changes. Please free up browser storage.');}}
+function save(){const notice=$('#storage-notice');try{localStorage.setItem(KEY,JSON.stringify(state));notice.hidden=true;notice.innerHTML='';return true;}catch{notice.innerHTML=`${icon('info')}<p><strong>Changes aren’t saved on this device.</strong> They’re available for this session only. Open <a href="#settings">Preferences</a> to export a backup before closing Food Saver.</p>`;notice.hidden=false;return false;}}
 function toast(message,undo=null){clearTimeout(toastTimer);undoAction=undo;$('#toast').innerHTML=`<span>${esc(message)}</span>${undo?'<button data-action="undo">Undo</button>':''}`;$('#toast').classList.add('visible');toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),undo?8500:4200);}
 function visibleFood(){return state.inventory.filter(f=>state.settings.track==='all'||f.perishable!==false);}
 function usableFood(){return state.inventory.filter(f=>remaining(f)>0&&Number(f.quantity)>0);}

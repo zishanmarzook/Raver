@@ -44,7 +44,7 @@ class Element {
 }
 
 class Document {
-  constructor(){this.elements=new Map();this.listeners={};for(const id of ['sidebar','topbar','main','mobile-nav','modal','toast'])this.elements.set(id,new Element(this,{id}));}
+  constructor(){this.elements=new Map();this.listeners={};for(const id of ['sidebar','topbar','storage-notice','main','mobile-nav','modal','toast'])this.elements.set(id,new Element(this,id==='storage-notice'?{id,hidden:''}:{id}));}
   addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);}
   querySelector(selector){
     if(selector==='#shopping-form input')return this.elements.get('shopping-form')?.elements.item||null;
@@ -79,7 +79,8 @@ class Document {
 
 async function withApp(callback,stored=null){
   const document=new Document(),storage=new Map(stored?[[STORAGE_KEY,JSON.stringify(stored)]]:[]),windowListeners={};
-  const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key)};
+  let failWrites=false;
+  const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>{if(failWrites)throw new Error('QuotaExceededError');storage.set(key,String(value));},removeItem:key=>storage.delete(key)};
   let hash='';const location={get hash(){return hash;},set hash(value){const next=value.startsWith('#')?value:'#'+value;if(next===hash)return;hash=next;for(const listener of windowListeners.hashchange||[])listener();}};
   const window={addEventListener:(name,fn)=>(windowListeners[name]??=[]).push(fn),scrollTo(){}};
   const originalSetTimeout=globalThis.setTimeout,originalSetInterval=globalThis.setInterval;
@@ -91,6 +92,7 @@ async function withApp(callback,stored=null){
   const harness={
     document,
     state:()=>JSON.parse(storage.get(STORAGE_KEY)),
+    setStorageFailure:fail=>{failWrites=fail;},
     html:id=>document.querySelector('#'+id).innerHTML,
     element:id=>document.querySelector('#'+id),
     navigate:target=>{location.hash=target;},
@@ -184,3 +186,21 @@ test('one-day reminders include tomorrow and exclude dates two days away',async(
   const stored=fixture([inventoryItem('milk',{expiry:future(1)}),inventoryItem('egg',{expiry:future(2)})]);stored.settings.leadDays=1;
   await withApp(async app=>{await app.click('reminders');assert.match(app.html('modal'),/Milk/);assert.doesNotMatch(app.html('modal'),/>Eggs</);},stored);
 });
+
+test('failed device writes keep a persistent notice and session data until a successful save',async()=>withApp(async app=>{
+  const notice=app.element('storage-notice');assert.equal(notice.hidden,true);
+  app.setStorageFailure(true);
+  await app.click('add');await app.click('choose-grocery',{id:'milk'});
+  const form=app.element('food-form');form.elements.quantity.value='250';form.elements.expiry.value=future(4);await app.submit(form);
+  assert.equal(app.state().inventory.length,0,'failed write must not appear in the persisted backup');
+  assert.equal(notice.hidden,false,'save warning remains visible after entry-success toast');
+  assert.match(notice.innerHTML,/Changes aren’t saved on this device/);
+  assert.match(notice.innerHTML,/session only/);assert.match(notice.innerHTML,/Preferences/);assert.match(notice.innerHTML,/export a backup/);
+  app.navigate('food');assert.match(app.html('main'),/Milk/,'unsaved food remains available in this session');
+  assert.equal(app.element('storage-notice'),notice,'page rendering must not replace the notice');assert.equal(notice.hidden,false);
+  await app.click('preferences');assert.match(app.html('main'),/Export my data/);assert.equal(notice.hidden,false);
+  app.setStorageFailure(false);await app.change('profile-setting','Family');
+  assert.equal(notice.hidden,true,'successful write clears the storage warning');assert.equal(notice.innerHTML,'');
+  assert.equal(app.state().inventory[0].groceryId,'milk','next successful save persists the retained session changes');
+  assert.equal(app.state().settings.profile,'Family');
+},fixture()));
