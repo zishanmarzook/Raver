@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/sw.js",
+    "check": "node --check dist/app.js && node --check dist/data.js && node --check dist/smart-kitchen.js && node --check dist/capture.js && node --check dist/sw.js",
     "test": "node --test --test-isolation=none tests/*.test.mjs"
   }
 }
