@@ -1,26 +1,30 @@
-# Raver development roadmap
+# Raver delivery status and staged roadmap
 
-## Current baseline
-Static vanilla JavaScript PWA, localStorage v1, 77 catalogue items, 12 recipes, in-app reminders and existing inventory/shopping flows. Preserve data key and backwards compatibility. No API secrets in client code.
+## Implemented on this draft branch
+- Smart Kitchen navigation, offline recipe ranking, Leftover Rescue and seven-day meal suggestions.
+- In-app expiry digest (existing reminder center retained); no background push notifications.
+- Budget and per-shopping-item price entry with explicit unpriced-item reporting.
+- Fridge/Freezer/Pantry plus Counter/Cabinet/Cellar and optional shelf notes.
+- Barcode camera capture where native BarcodeDetector is supported; validation only, **not product database lookup**.
+- Receipt **text** parsing and individual review/add-to-shopping actions; photo OCR is not implemented.
+- Optional browser speech recognition for simple “add X” shopping commands.
+- Used/wasted activity events and basic waste counts, starting with new actions only.
+- Offline caching of new modules, regression tests, CI workflow.
+- Preserved localStorage schema version and original pages.
 
-## Stage 1 (this branch)
-- Offline rescue recipe ranking and 7-day suggestions on the Smart Kitchen screen.
-- Expiry digest logic and budget calculation primitives; price-entry UI is not yet implemented.
-- Existing Fridge/Freezer/Pantry selector remains in place.
-- Service worker precaches the new module.
-- Automated unit tests for new calculations.
+## Outstanding implementation
+1. **Real AI Fridge Chef**: requires a secure server-side model API proxy, rate limits, dietary/allergen controls, fallback and costs.
+2. **Receipt photo OCR**: choose and integrate on-device OCR or secure hosted OCR; verify output and permissions.
+3. **Product lookup**: select barcode database, manage missing products and API quotas.
+4. **Shared Family Fridge + true Offline Sync**: requires a backend, authenticated household membership, authorization rules, migration, conflict policy, retry queue and security tests. Local browser storage is NOT shared between devices.
+5. **Smart Expiry Alerts**: notifications outside the open app require explicit permissions and a reliable push service; web browsers may limit delivery.
+6. **Food Waste Analytics**: history chart, disposal reason, cost and quantity normalization, import/export and corrections.
+7. **Meal Planner**: portion-aware inventory reservation, dietary filters and persistent editable schedule.
+8. **Voice Assistant**: broader commands and accessible fallback.
 
-## Stage 2 — capture
-Barcode scanning via camera API and product lookup with explicit manual fallback; receipt OCR with user confirmation; optional speech recognition with text fallback. Require HTTPS and handle denied permissions. Never silently insert unverified items.
-
-## Stage 3 — analytics and reminders
-Add append-only inventory activity events (used/wasted/edited), clear monetary-value provenance, monthly waste analytics, opt-in browser notifications with capability checks. Avoid assuming notifications run while browser is closed.
-
-## Stage 4 — accounts and offline sync
-Choose backend/auth provider, design household membership roles, scoped security rules, sync queue, idempotent mutations, conflict resolution and migration from localStorage. Encrypt transport; no anonymous shared kitchen access.
-
-## Stage 5 — AI Fridge Chef
-Server-side proxy for optional AI recipe generation, per-user quotas, dietary restrictions and allergy warnings. Keep deterministic offline suggestions when API is unavailable.
-
-## Release gates
-Run npm run check and npm test; manually test desktop/mobile, storage migration, offline reload, permission denial, accessibility and cross-browser behavior. Do not merge until checks pass.
+## Validation before merge
+- Run `npm run check` and `npm test` (GitHub Actions workflow included).
+- Test on iOS Safari, Android Chrome and desktop; especially camera, speech recognition, service worker update, data persistence and layout.
+- Confirm no accidental loss of user data when resetting or importing.
+- Review camera permission lifecycle and ensure no API secrets are shipped to browser.
+- Do not merge until checks and manual QA are complete.
